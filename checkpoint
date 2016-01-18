@@ -1,0 +1,3 @@
+model_checkpoint_path: "MNIST_data-1999"
+all_model_checkpoint_paths: "MNIST_data-999"
+all_model_checkpoint_paths: "MNIST_data-1999"
