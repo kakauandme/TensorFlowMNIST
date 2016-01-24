@@ -1,13 +1,12 @@
 
 # coding: utf-8
 
-# # TensorFlow softmax regression & deep NN
-# #### A high-level tutorial into Deep Learning using MNIST data and TesnorFlow library.
+# # Deep NN on MNIST using TensorFlow
+# #### A high-level tutorial into Deep Learning using MNIST data and TensorFlow library.
 # by [@kakauandme](https://twitter.com/KaKaUandME) and [@thekoshkina](https://twitter.com/thekoshkina)
 # 
-# - 0.90 accuracy using softmax regression
+# Accuracy: 0.99
 # 
-# - 0.99 accuracy using deep neural network
 # 
 # **Prerequisites:** fundamental coding skills, a bit of linear algebra, especially matrix operations and perhaps understanding how images are stored in computer memory. To start with machine learning, we suggest [coursera course](https://www.coursera.org/learn/machine-learning) by Andrew Ng.
 # 
@@ -24,24 +23,15 @@
 import numpy as np
 import pandas as pd
 
-#get_ipython().magic('matplotlib inline')
-#import matplotlib.pyplot as plt
-#import matplotlib.cm as cm
+get_ipython().magic('matplotlib inline')
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 import tensorflow as tf
 
 # settings
-LEARNING_RATE = 0.01
-TRAINING_ITERATIONS = 1000
-DISPLAY_STEP = 100
-
-# set to True to run Deep NN (takes few hours to run on CPU)
-RUN_DEEPNET = True
-
-if RUN_DEEPNET:
-    LEARNING_RATE = 1e-4
-    #TRAINING_ITERATIONS = 20000    
-    DISPLAY_STEP = 1000    
+LEARNING_RATE = 1e-4
+TRAINING_ITERATIONS = 20000    
     
 DROPOUT = 0.5
 BATCH_SIZE = 50
@@ -50,7 +40,7 @@ BATCH_SIZE = 50
 VALIDATION_SIZE = 2000
 
 # image number to output
-IMAGE_TO_DISPALY = 10
+IMAGE_TO_DISPLAY = 10
 
 
 # ## Data preparation
@@ -101,11 +91,11 @@ def display(img):
     # (784) => (28,28)
     one_image = img.reshape(image_width,image_height)
     
-   # plt.axis('off')
-    #plt.imshow(one_image, cmap=cm.binary)
+    plt.axis('off')
+    plt.imshow(one_image, cmap=cm.binary)
 
 # output image     
-display(images[IMAGE_TO_DISPALY])
+display(images[IMAGE_TO_DISPLAY])
 
 
 # The corresponding labels are numbers between 0 and 9, describing which digit a given image is of.
@@ -115,7 +105,7 @@ display(images[IMAGE_TO_DISPALY])
 labels_flat = data[[0]].values.ravel()
 
 print('labels_flat({0})'.format(len(labels_flat)))
-print ('labels_flat[{0}] => {1}'.format(IMAGE_TO_DISPALY,labels_flat[IMAGE_TO_DISPALY]))
+print ('labels_flat[{0}] => {1}'.format(IMAGE_TO_DISPLAY,labels_flat[IMAGE_TO_DISPLAY]))
 
 
 # In this case, there are ten different digits/labels/classes.
@@ -147,7 +137,7 @@ labels = dense_to_one_hot(labels_flat, labels_count)
 labels = labels.astype(np.uint8)
 
 print('labels({0[0]},{0[1]})'.format(labels.shape))
-print ('labels[{0}] => {1}'.format(IMAGE_TO_DISPALY,labels[IMAGE_TO_DISPALY]))
+print ('labels[{0}] => {1}'.format(IMAGE_TO_DISPLAY,labels[IMAGE_TO_DISPLAY]))
 
 
 # Lastly we set aside data for validation. It's essential in machine learning to have a separate dataset which doesn't take part in the training and is used to make sure that what we've learned can actually be generalised.
@@ -319,21 +309,12 @@ h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
 # In[18]:
 
-if RUN_DEEPNET:
-    
-    # readout layer for deep net
-    W_fc2 = weight_variable([1024, labels_count])
-    b_fc2 = bias_variable([labels_count])
-    
-    y = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
-else:  
-    
-    # readout layer for regression
-    W = tf.Variable(tf.zeros([image_size, labels_count]))
-    b = tf.Variable(tf.zeros([labels_count]))
-    
-    y = tf.nn.softmax(tf.matmul(x, W) + b)
-    
+# readout layer for deep net
+W_fc2 = weight_variable([1024, labels_count])
+b_fc2 = bias_variable([labels_count])
+
+y = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+
 #print (y.get_shape()) # => (40000, 10)
 
 
@@ -348,11 +329,7 @@ cross_entropy = -tf.reduce_sum(y_*tf.log(y))
 
 
 # optimisation function
-if RUN_DEEPNET:
-    train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cross_entropy)
-else:
-    train_step = tf.train.AdamOptimizer(LEARNING_RATE).minimize(cross_entropy)
-
+train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cross_entropy)
     
 # evaluation
 correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
@@ -430,16 +407,39 @@ sess.run(init)
 
 # In[23]:
 
+# visualisation variables
+train_accuracies = []
+validation_accuracies = []
+x_range = []
+
+display_step=1
+
 for i in range(TRAINING_ITERATIONS):
 
     #get new batch
     batch_xs, batch_ys = next_batch(BATCH_SIZE)        
 
-    # check progress
-    if i%DISPLAY_STEP == 0 and i:         
-        train_accuracy = accuracy.eval(feed_dict={x:batch_xs, y_: batch_ys, keep_prob: 1.0})            
-        print('training_accuracy => %.4f for step %d'%(train_accuracy, i))
-
+    # check progress on every 1st,2nd,...,10th,20th,...,100th... step
+    if i%display_step == 0 or (i+1) == TRAINING_ITERATIONS:
+        
+        train_accuracy = accuracy.eval(feed_dict={x:batch_xs, 
+                                                  y_: batch_ys, 
+                                                  keep_prob: 1.0})       
+        if(VALIDATION_SIZE):
+            validation_accuracy = accuracy.eval(feed_dict={x: validation_images[0:BATCH_SIZE], 
+                                                            y_: validation_labels[0:BATCH_SIZE], 
+                                                            keep_prob: 1.0})                                  
+            print('training_accuracy / validation_accuracy => %.2f / %.2f for step %d'%(train_accuracy, validation_accuracy, i))
+            
+            validation_accuracies.append(validation_accuracy)
+            x_range.append(i)
+        else:
+             print('training_accuracy => %.4f for step %d'%(train_accuracy, i))
+        train_accuracies.append(train_accuracy)
+        
+        # increase display_step
+        if i%(display_step*10) == 0 and i:
+            display_step *= 10
     # train on batch
     sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: DROPOUT})
 
@@ -451,7 +451,14 @@ for i in range(TRAINING_ITERATIONS):
 # check final accuracy on validation set  
 if(VALIDATION_SIZE):
     validation_accuracy = accuracy.eval(feed_dict={x: validation_images, y_: validation_labels, keep_prob: 1.0})
-    print('validation_accuracy => %.4f'%validation_accuracy)
+    print('validation_accuracy => %.2f'%validation_accuracy)
+    plt.plot(x_range, train_accuracies,'-b', label='Training')
+    plt.plot(x_range, validation_accuracies,'-g', label='Validation')
+    plt.legend(loc='lower right', frameon=False)
+    plt.ylim(ymax = 1.1, ymin = 0.7)
+    plt.ylabel('accuracy')
+    plt.xlabel('step')
+    plt.show()
 
 
 # When, we're happy with the outcome, we read test data from **`test.csv`** and predict labels for provided images.
@@ -478,8 +485,8 @@ predicted_lables = predict.eval(feed_dict={x: test_images, keep_prob: 1.0})
 print('predicted_lables({0})'.format(len(predicted_lables)))
 
 # output test image and prediction
-display(test_images[IMAGE_TO_DISPALY])
-print ('predicted_lables[{0}] => {1}'.format(IMAGE_TO_DISPALY,predicted_lables[IMAGE_TO_DISPALY]))
+display(test_images[IMAGE_TO_DISPLAY])
+print ('predicted_lables[{0}] => {1}'.format(IMAGE_TO_DISPLAY,predicted_lables[IMAGE_TO_DISPLAY]))
 
 # save results
 np.savetxt('submission_softmax.csv', 
@@ -497,14 +504,12 @@ np.savetxt('submission_softmax.csv',
 
 # In[26]:
 
-if (RUN_DEEPNET):
-    layer1_grid = layer1.eval(feed_dict={x: test_images, keep_prob: 1.0})
-   
-    #plt.axis('off')
-    #plt.imshow(layer1_grid[IMAGE_TO_DISPALY], cmap=cm.seismic )
+layer1_grid = layer1.eval(feed_dict={x: test_images[IMAGE_TO_DISPLAY:IMAGE_TO_DISPLAY+1], keep_prob: 1.0})
+plt.axis('off')
+plt.imshow(layer1_grid[0], cmap=cm.seismic )
 
 
-# In[27]:
+# In[28]:
 
 sess.close()
 
