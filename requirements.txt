@@ -2,4 +2,4 @@ jupyter
 numpy
 matplotlib
 pandas
-https://storage.googleapis.com/tensorflow/mac/tensorflow-0.6.0-py3-none-any.whl
+https://storage.googleapis.com/tensorflow/mac/tensorflow-0.7.0-py3-none-any.whl
